@@ -1,13 +1,28 @@
 import 'package:fit_check/constants/colors.dart';
 import 'package:fit_check/constants/strings.dart';
+import 'package:fit_check/screens/dashboard.dart';
 import 'package:fit_check/screens/login.dart';
 import 'package:fit_check/screens/profile_creation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class IntroScreen extends StatelessWidget {
-  final bool isLoad;
-  const IntroScreen({super.key, required this.isLoad});
+class IntroScreen extends StatefulWidget {
+  const IntroScreen({super.key, });
 
+  @override
+  State<IntroScreen> createState() => IntroScreenState();
+}
+
+class IntroScreenState extends State<IntroScreen> {
+  static const LOGINKEY="login", REGISTERKEY="register";
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    skipToDashboard();
+
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,6 +62,14 @@ class IntroScreen extends StatelessWidget {
                 color: Colors.black87,
               ),
             ),
+            SizedBox(
+              height: 330,
+              child: SvgPicture.asset(
+                "assets/images/intro_filler.svg",
+                semanticsLabel: "Intro filler image",
+                fit: BoxFit.contain,
+              ),
+            ),
             const SizedBox(
               height: 70,
             ),
@@ -59,7 +82,7 @@ class IntroScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => ProfileCreation(isLoad: isLoad,)),
+                          builder: (context) => const ProfileCreation()),
                     );
                   },
                   style: TextButton.styleFrom(
@@ -118,4 +141,25 @@ class IntroScreen extends StatelessWidget {
       ),
     );
   }
-}
+
+  void skipToDashboard() async{
+    var sharedPref = await SharedPreferences.getInstance();
+    var isLoggedIn = sharedPref.getBool(LOGINKEY);
+    var isRegistered = sharedPref.getBool(REGISTERKEY);
+    late bool loginStatus, registeredStatus;
+    if(isLoggedIn!=null){
+      loginStatus = isLoggedIn;
+    }
+    if(isRegistered!=null){
+      registeredStatus = isRegistered;
+    }
+    if(loginStatus || registeredStatus){
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+            builder: (context) => const Dashboard()),
+      );
+    }
+  }
+  }
+

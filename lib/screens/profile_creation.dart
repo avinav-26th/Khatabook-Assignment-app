@@ -1,6 +1,7 @@
 import 'package:fit_check/constants/colors.dart';
 import 'package:fit_check/constants/strings.dart';
 import 'package:fit_check/screens/dashboard.dart';
+import 'package:fit_check/screens/intro.dart';
 import 'package:fit_check/screens/login.dart';
 import 'package:fit_check/widgets/customInputField.dart';
 import 'package:flutter/material.dart';
@@ -8,36 +9,55 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileCreation extends StatefulWidget {
-  bool isLoad;
-  ProfileCreation({super.key, required this.isLoad});
+  const ProfileCreation({
+    super.key,
+  });
 
   @override
-  State<ProfileCreation> createState() => _ProfileCreationState();
+  State<ProfileCreation> createState() => ProfileCreationState();
 }
 
-class _ProfileCreationState extends State<ProfileCreation> {
+class ProfileCreationState extends State<ProfileCreation> {
   bool isAgreed = false;
-  late bool isMailValid, isUsernameValid, isPasswordValid;
   TextEditingController usernameController = TextEditingController();
   TextEditingController mailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
-  late String inputMail, inputName, inputPassword;
+  static const  NAMEKEY="username", PASSKEY="password";
 
-  void prefStore(bool isAgreed) async{
-    var prefs = await SharedPreferences.getInstance();
-    prefs.setBool("isLoad", isAgreed);
+  final FORMKEY = GlobalKey<FormState>();
+
+  String? emailValidationFunc(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Email cannot be blank";
+    } else if (!RegExp(r'^[\w-]+@([\w-]+\.)+\w{2,4}').hasMatch(value!)) {
+      return "Enter proper email";
+    } else {
+      return null;
+    }
   }
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    loader();
+
+  String? nameValidationFunc(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Name cannot be blank";
+    } else if (!RegExp(r'^[a-z A-Z]+$').hasMatch(value!)) {
+      return "Enter proper name";
+    } else {
+      return null;
+    }
   }
-  void loader() async {
-    var prefs = await SharedPreferences.getInstance();
-    widget.isLoad=prefs.getBool("isLoad")!;
-    setState(() {});
+
+  String? passwordValidationFunc(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Please enter password";
+    } else if (!RegExp(
+            r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$')
+        .hasMatch(value)) {
+      return "Enter a valid password";
+    } else {
+      return null;
+    }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,7 +65,7 @@ class _ProfileCreationState extends State<ProfileCreation> {
       backgroundColor: const Color(0xff2b98cf),
       body: Padding(
         padding: const EdgeInsets.symmetric(
-          vertical: 50,
+          vertical: 35,
           horizontal: 25,
         ),
         child: Column(
@@ -73,102 +93,108 @@ class _ProfileCreationState extends State<ProfileCreation> {
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(vertical: 8, horizontal: 18),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 16),
-                      child: TextFormField(
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter some text';
+                child: Form(
+                  key: FORMKEY,
+                  child: Column(
+                    children: [
+                      CustomInputField(
+                        labelText: "Enter mail",
+                        textEditingController: mailController,
+                        inputType: TextInputType.emailAddress,
+                        isPassword: false,
+                        isValid: emailValidationFunc,
+                      ),
+                      CustomInputField(
+                        labelText: 'Enter username',
+                        textEditingController: usernameController,
+                        inputType: TextInputType.text,
+                        isPassword: false,
+                        isValid: nameValidationFunc,
+                      ),
+                      CustomInputField(
+                        labelText: 'Enter password',
+                        textEditingController: passwordController,
+                        inputType: TextInputType.visiblePassword,
+                        isPassword: true,
+                        isValid: passwordValidationFunc,
+                      ),
+                      const SizedBox(
+                        height: 40,
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          if (FORMKEY.currentState!.validate()) {
+                            if (isAgreed) {
+                              Fluttertoast.showToast(
+                                msg: "Registered successfully",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: const Color(0xff13A01B),
+                                textColor: Colors.white,
+                                fontSize: 14,
+                              );
+                              var registerSharedPref =
+                                  await SharedPreferences.getInstance();
+                              registerSharedPref.setString(NAMEKEY, usernameController.text);
+                              registerSharedPref.setString(PASSKEY, passwordController.text);
+                              registerSharedPref.setBool(
+                                  IntroScreenState.REGISTERKEY, true);
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const Dashboard()),
+                              );
+                            } else {
+                              Fluttertoast.showToast(
+                                msg: "Please agree to our terms!",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.redAccent,
+                                textColor: Colors.white,
+                                fontSize: 14,
+                              );
+                            }
                           }
-                          return null;
                         },
-                        decoration: const InputDecoration(
-                          border: UnderlineInputBorder(),
-                          labelText: "Enter mail",
+                        style: TextButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          backgroundColor: appColor,
+                          elevation: 5,
                         ),
-                        onChanged: (value) =>
-                            setState(() => inputMail = value),
-                      ),
-                    ),
-                    CustomInputField(
-                      labelText: 'Enter username',
-                      textEditingController: usernameController,
-                    ),
-                    CustomInputField(
-                      labelText: 'Enter password',
-                      textEditingController: passwordController,
-                    ),
-                    const SizedBox(
-                      height: 40,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        if (mailController.toString().contains("@") &&
-                            mailController.toString().length >= 4) {
-                          isMailValid = true;
-                        } else {
-                          isMailValid = false;
-                        }
-                        String inputPassword = passwordController.toString();
-                        if (passwordController.value == "a") {}
-                        if (isAgreed) {
-                          prefStore(isAgreed);
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const Dashboard()),
-                          );
-                        } else {
-                          Fluttertoast.showToast(
-                            msg: "Please agree to our terms!",
-                            toastLength: Toast.LENGTH_SHORT,
-                            gravity: ToastGravity.BOTTOM,
-                            timeInSecForIosWeb: 1,
-                            backgroundColor: Colors.redAccent,
-                            textColor: Colors.white,
-                            fontSize: 14,
-                          );
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        backgroundColor: appColor,
-                        elevation: 5,
-                      ),
-                      child: const Padding(
-                        padding:
-                            EdgeInsets.symmetric(vertical: 3, horizontal: 35),
-                        child: Text(
-                          "Register",
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.white,
+                        child: const Padding(
+                          padding:
+                              EdgeInsets.symmetric(vertical: 3, horizontal: 35),
+                          child: Text(
+                            "Register",
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const LoginScreen()),
-                        );
-                      },
-                      child: Text(
-                        "I have an account",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: appColor,
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()),
+                          );
+                        },
+                        child: Text(
+                          "I have an account",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: appColor,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -218,5 +244,10 @@ class _ProfileCreationState extends State<ProfileCreation> {
         ),
       ),
     );
+  }
+  void storeNameAndPassword() async{
+    var sharedPref = await SharedPreferences.getInstance();
+    var usernamePref = sharedPref.getString(NAMEKEY);
+    var passwordPref = sharedPref.getString(PASSKEY);
   }
 }
